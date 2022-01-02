@@ -70,6 +70,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.kodein.di</groupId>
+            <artifactId>kodein-di-jvm</artifactId>
+            <version>7.10.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test-junit5</artifactId>
             <version>1.5.31</version>
