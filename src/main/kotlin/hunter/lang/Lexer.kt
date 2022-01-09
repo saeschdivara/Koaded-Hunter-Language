@@ -15,13 +15,14 @@ enum class TokenType {
 
     // One or two character tokens.
     EQUAL, BANG, BangEqual, EqualEqual,
+    LOWER, GREATER, LowerEqual, GreaterEqual,
 
     // Literals.
     IDENTIFIER, STRING, INT, FLOAT,
 
     // Keywords.
     IF, ELSE, WHILE,
-    CONST, FUNCTION,
+    CONST, LET, FUNCTION,
     PRINT,
     TRUE, FALSE,
 
@@ -73,6 +74,22 @@ class Lexer {
             '(' -> TokenType.LeftParen
             ')' -> TokenType.RightParen
             ',' -> TokenType.COMMA
+            '<' -> {
+                if (peek() == '=') {
+                    advance()
+                    TokenType.LowerEqual
+                } else {
+                    TokenType.LOWER
+                }
+            }
+            '>' -> {
+                if (peek() == '=') {
+                    advance()
+                    TokenType.GreaterEqual
+                } else {
+                    TokenType.GREATER
+                }
+            }
             '=' -> TokenType.EQUAL
             ' ' -> {
                 if (peek() == ' ') {
@@ -102,7 +119,7 @@ class Lexer {
 
     private fun scanNumber(): TokenType {
 
-        while (peek().isDigit()) {
+        while (!isAtEnd() && peek().isDigit()) {
             advance()
         }
 
@@ -134,7 +151,9 @@ class Lexer {
             "print" -> TokenType.PRINT
             "if" -> TokenType.IF
             "else" -> TokenType.ELSE
+            "while" -> TokenType.WHILE
             "const" -> TokenType.CONST
+            "let" -> TokenType.LET
             else -> TokenType.IDENTIFIER
         }
     }
