@@ -1,15 +1,13 @@
 package hunter.lang
 
-import java.util.*
-import java.util.concurrent.ArrayBlockingQueue
 import kotlin.collections.ArrayList
-import kotlin.math.exp
 import kotlin.system.exitProcess
 
 interface Expression
 
 interface ExpressionWithBody : Expression {
     val body: List<Expression>
+    fun getExtraInfo(): String
 }
 
 interface ExpressionWithParameters : Expression {
@@ -18,18 +16,29 @@ interface ExpressionWithParameters : Expression {
 
 class EmptyExpression : Expression
 
-data class FunctionExpression(val name: Token, override val body: List<Expression>) : ExpressionWithBody
+data class OperationExpression(val left: Expression, val operator: Token, val right: Expression): Expression
+
+data class FunctionExpression(val name: Token, override val body: List<Expression>) : ExpressionWithBody {
+    override fun getExtraInfo(): String {
+        return "[name=${name.lexeme}]"
+    }
+}
+
+data class WhileExpression(val condition: Expression, override val body: List<Expression>) : ExpressionWithBody {
+    override fun getExtraInfo(): String {
+        return "[condition: $condition]"
+    }
+}
 
 data class PrintExpression(override val parameters: List<Expression>) : ExpressionWithParameters
 data class StringExpression(val value: Token) : Expression
 data class IntExpression(val value: Token) : Expression
-data class VariableDefinitionExpression(val name: Token, val value: Expression) : Expression
+data class VariableDefinitionExpression(val isConst: Boolean, val name: Token, val value: Expression) : Expression
 data class VariableExpression(val value: Token) : Expression
 
 class Parser {
 
     private var tokens: List<Token> = emptyList()
-    private var bodies: Queue<ExpressionWithBody> = ArrayBlockingQueue(100)
     private var currentBodyLevel = 0
     private var current = 0
 
@@ -87,13 +96,19 @@ class Parser {
             val token = advance()
 
             when (token.type) {
+                TokenType.LET -> { expressions.add(parseLet()) }
                 TokenType.CONST -> { expressions.add(parseConst()) }
+                TokenType.WHILE -> { expressions.add(parseWhile()) }
                 TokenType.PRINT -> { expressions.add(parsePrint()) }
                 else -> {}
             }
         }
 
         return expressions
+    }
+
+    private fun parseWhile() : WhileExpression {
+        return WhileExpression(parseSimpleExpression(listOf(TokenType.SpaceLevel)), parseBody())
     }
 
     private fun parsePrint() : PrintExpression {
@@ -118,7 +133,7 @@ class Parser {
         val parameters = ArrayList<Expression>()
 
         while (!isAtEnd() && peek().type != TokenType.RightParen) {
-            val expr = parseSimpleExpression()
+            val expr = parseSimpleExpression(listOf(TokenType.COMMA, TokenType.RightParen))
             parameters.add(expr)
 
             if (peek().type == TokenType.COMMA) {
@@ -142,19 +157,44 @@ class Parser {
             exitProcess(1)
         }
 
-        return VariableDefinitionExpression(identifier, parseSimpleExpression())
+        return VariableDefinitionExpression(true, identifier, parseSimpleExpression(listOf(TokenType.SpaceLevel)))
     }
 
-    private fun parseSimpleExpression() : Expression {
-
-        val token = advance()
-
-        return when (token.type) {
-            TokenType.STRING -> { StringExpression(token) }
-            TokenType.INT -> { IntExpression(token) }
-            TokenType.IDENTIFIER -> { VariableExpression(token) }
-            else -> { EmptyExpression() }
+    private fun parseLet() : VariableDefinitionExpression {
+        val identifier = advance()
+        if (identifier.type != TokenType.IDENTIFIER) {
+            println("No variable name defined")
+            exitProcess(1)
         }
+
+        val equal = advance()
+        if (equal.type != TokenType.EQUAL) {
+            println("Equal after variable name missing")
+            exitProcess(1)
+        }
+
+        return VariableDefinitionExpression(false, identifier, parseSimpleExpression(listOf(TokenType.SpaceLevel)))
+    }
+
+    private fun parseSimpleExpression(breakPoints: List<TokenType>) : Expression {
+
+        val expressionTokens = ArrayList<Token>()
+        while (!isAtEnd() && !breakPoints.contains(peek().type)) {
+            expressionTokens.add(advance())
+        }
+
+        if (expressionTokens.size == 1) {
+            val token = expressionTokens[0]
+            return when (token.type) {
+                TokenType.STRING -> { StringExpression(token) }
+                TokenType.INT -> { IntExpression(token) }
+                TokenType.IDENTIFIER -> { VariableExpression(token) }
+                else -> { EmptyExpression() }
+            }
+        }
+
+        //
+        return EmptyExpression()
     }
 
     private fun parseLevel(): Int {

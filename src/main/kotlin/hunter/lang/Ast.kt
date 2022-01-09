@@ -11,7 +11,7 @@ class Ast(val expressions: List<Expression>) {
     private fun printExpression(expr: Expression, spaceLevel: Int) {
         if (expr is ExpressionWithBody) {
             printSpaceLevel(spaceLevel)
-            println(expr.javaClass.canonicalName)
+            println("${expr.javaClass.canonicalName} ${expr.getExtraInfo()}")
             printSpaceLevel(spaceLevel)
             println("Body:")
 
