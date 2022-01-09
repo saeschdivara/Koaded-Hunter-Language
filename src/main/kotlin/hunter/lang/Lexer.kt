@@ -73,6 +73,7 @@ class Lexer {
             '(' -> TokenType.LeftParen
             ')' -> TokenType.RightParen
             ',' -> TokenType.COMMA
+            '=' -> TokenType.EQUAL
             ' ' -> {
                 if (peek() == ' ') {
                     advance()
@@ -100,6 +101,11 @@ class Lexer {
     }
 
     private fun scanNumber(): TokenType {
+
+        while (peek().isDigit()) {
+            advance()
+        }
+
         return TokenType.INT
     }
 
@@ -126,6 +132,9 @@ class Lexer {
         return when(tokenString) {
             "fun" -> TokenType.FUNCTION
             "print" -> TokenType.PRINT
+            "if" -> TokenType.IF
+            "else" -> TokenType.ELSE
+            "const" -> TokenType.CONST
             else -> TokenType.IDENTIFIER
         }
     }
