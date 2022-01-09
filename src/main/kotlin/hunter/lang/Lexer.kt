@@ -73,7 +73,14 @@ class Lexer {
             '(' -> TokenType.LeftParen
             ')' -> TokenType.RightParen
             ',' -> TokenType.COMMA
-            ' ' -> TokenType.SPACE
+            ' ' -> {
+                if (peek() == ' ') {
+                    advance()
+                    TokenType.SpaceLevel
+                } else {
+                    TokenType.SPACE
+                }
+            }
             '\r' -> TokenType.SPACE
             '\n' -> TokenType.LineBreak
             '\t' -> TokenType.SpaceLevel
