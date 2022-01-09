@@ -3,6 +3,7 @@ package hunter.lang
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 import kotlin.collections.ArrayList
+import kotlin.math.exp
 import kotlin.system.exitProcess
 
 interface Expression
@@ -11,10 +12,19 @@ interface ExpressionWithBody : Expression {
     val body: List<Expression>
 }
 
+interface ExpressionWithParameters : Expression {
+    val parameters: List<Expression>
+}
+
+class EmptyExpression : Expression
+
 data class FunctionExpression(val name: Token, override val body: List<Expression>) : ExpressionWithBody
 
-data class PrintExpression(val parameters: List<Expression>) : Expression
+data class PrintExpression(override val parameters: List<Expression>) : ExpressionWithParameters
 data class StringExpression(val value: Token) : Expression
+data class IntExpression(val value: Token) : Expression
+data class VariableDefinitionExpression(val name: Token, val value: Expression) : Expression
+data class VariableExpression(val value: Token) : Expression
 
 class Parser {
 
@@ -77,6 +87,7 @@ class Parser {
             val token = advance()
 
             when (token.type) {
+                TokenType.CONST -> { expressions.add(parseConst()) }
                 TokenType.PRINT -> { expressions.add(parsePrint()) }
                 else -> {}
             }
@@ -107,15 +118,43 @@ class Parser {
         val parameters = ArrayList<Expression>()
 
         while (!isAtEnd() && peek().type != TokenType.RightParen) {
-            val token = advance()
+            val expr = parseSimpleExpression()
+            parameters.add(expr)
 
-            when (token.type) {
-                TokenType.STRING -> { parameters.add(StringExpression(token)) }
-                else -> {}
+            if (peek().type == TokenType.COMMA) {
+                advance()
             }
         }
 
         return parameters
+    }
+
+    private fun parseConst() : VariableDefinitionExpression {
+        val identifier = advance()
+        if (identifier.type != TokenType.IDENTIFIER) {
+            println("No variable name defined")
+            exitProcess(1)
+        }
+
+        val equal = advance()
+        if (equal.type != TokenType.EQUAL) {
+            println("Equal after variable name missing")
+            exitProcess(1)
+        }
+
+        return VariableDefinitionExpression(identifier, parseSimpleExpression())
+    }
+
+    private fun parseSimpleExpression() : Expression {
+
+        val token = advance()
+
+        return when (token.type) {
+            TokenType.STRING -> { StringExpression(token) }
+            TokenType.INT -> { IntExpression(token) }
+            TokenType.IDENTIFIER -> { VariableExpression(token) }
+            else -> { EmptyExpression() }
+        }
     }
 
     private fun parseLevel(): Int {
