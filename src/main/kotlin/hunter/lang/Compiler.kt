@@ -10,8 +10,19 @@ class Compiler(di: DI) {
     fun compileModule(path: String) {
 
         val tokens = lexer.lexFile(path)
+
         tokens.forEach {
             println(it)
         }
+
+        val expressions = parser.parseTokens(tokens)
+        val ast = Ast(expressions)
+
+        println("")
+        println("Ast:")
+        ast.print()
+//        expressions.forEach {
+//            println(it)
+//        }
     }
 }
