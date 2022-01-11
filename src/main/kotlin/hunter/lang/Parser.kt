@@ -183,6 +183,11 @@ class Parser {
             expressionTokens.add(advance())
         }
 
+        return parseSimpleExpression2(expressionTokens)
+    }
+
+    // todo: rename to something better
+    private fun parseSimpleExpression2(expressionTokens: List<Token>) : Expression {
         if (expressionTokens.size == 1) {
             val token = expressionTokens[0]
             return when (token.type) {
@@ -193,8 +198,45 @@ class Parser {
             }
         }
 
-        //
-        return EmptyExpression()
+        return parseOperations(expressionTokens)
+    }
+
+    private fun parseOperations(tokens: List<Token>) : OperationExpression {
+        var operation: OperationExpression? = null
+        var tokenCounter = 0
+
+        while (tokenCounter < tokens.size && !isOperator(tokens[tokenCounter])) {
+            tokenCounter += 1
+            if (isOperator(tokens[tokenCounter])) {
+                if (tokenCounter > 0) {
+                    operation = OperationExpression(
+                        parseSimpleExpression2(tokens.subList(0, tokenCounter)),
+                        tokens[tokenCounter],
+                        parseSimpleExpression2(tokens.subList(tokenCounter+1, tokens.size))
+                    )
+
+                    break
+                }
+            }
+        }
+
+        if (operation == null) {
+            println("No operator found")
+            exitProcess(1)
+        }
+
+        return operation
+    }
+
+    private fun isOperator(token: Token) : Boolean {
+        return when (token.type) {
+            TokenType.GREATER -> true
+            TokenType.GreaterEqual -> true
+            TokenType.LOWER -> true
+            TokenType.LowerEqual -> true
+            TokenType.EqualEqual -> true
+            else -> false
+        }
     }
 
     private fun parseLevel(): Int {
