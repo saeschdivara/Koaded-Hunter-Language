@@ -1,5 +1,6 @@
 package hunter.lang
 
+import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.system.exitProcess
 
@@ -30,6 +31,18 @@ data class WhileExpression(val condition: Expression, override val body: List<Ex
     }
 }
 
+data class IfExpression(val condition: Expression, override val body: List<Expression>) : ExpressionWithBody {
+    override fun getExtraInfo(): String {
+        return "[condition: $condition]"
+    }
+}
+
+data class ElseExpression(override val body: List<Expression>) : ExpressionWithBody {
+    override fun getExtraInfo(): String {
+        return ""
+    }
+}
+
 data class PrintExpression(override val parameters: List<Expression>) : ExpressionWithParameters
 data class StringExpression(val value: Token) : Expression
 data class IntExpression(val value: Token) : Expression
@@ -40,12 +53,13 @@ data class VariableExpression(val value: Token) : Expression
 class Parser {
 
     private var tokens: List<Token> = emptyList()
-    private var currentBodyLevel = 0
+    private val bodyLevels = Stack<Int>()
     private var current = 0
 
     fun parseTokens(tokens: List<Token>) : List<Expression> {
         this.tokens = tokens
         current = 0
+        bodyLevels.push(0)
 
         val expressions = ArrayList<Expression>()
 
@@ -88,7 +102,11 @@ class Parser {
         var currentLevel = parseLevel()
         val expressions = ArrayList<Expression>()
 
-        while (!isAtEnd() && currentLevel >= currentBodyLevel) {
+        if (currentLevel >= bodyLevels.peek()) {
+            bodyLevels.push(currentLevel)
+        }
+
+        while (!isAtEnd() && currentLevel >= bodyLevels.peek()) {
             if (peek().type == TokenType.SpaceLevel) {
                 currentLevel = parseLevel()
                 continue
@@ -100,6 +118,8 @@ class Parser {
                 TokenType.LET -> { expressions.add(parseLet()) }
                 TokenType.CONST -> { expressions.add(parseConst()) }
                 TokenType.WHILE -> { expressions.add(parseWhile()) }
+                TokenType.IF -> { expressions.add(parseIf()) }
+                TokenType.ELSE -> { expressions.add(parseElse()) }
                 TokenType.PRINT -> { expressions.add(parsePrint()) }
                 TokenType.IDENTIFIER -> {
                     if (peek().type == TokenType.EQUAL) {
@@ -110,11 +130,29 @@ class Parser {
             }
         }
 
+        bodyLevels.pop()
+
         return expressions
     }
 
     private fun parseWhile() : WhileExpression {
         return WhileExpression(parseSimpleExpression(listOf(TokenType.SpaceLevel)), parseBody())
+    }
+
+    private fun parseIf() : IfExpression {
+        val condition = parseSimpleExpression(listOf(TokenType.THEN))
+
+        val thenToken = advance()
+        if (thenToken.type != TokenType.THEN) {
+            println("Then missing after if condition")
+            exitProcess(1)
+        }
+
+        return IfExpression(condition, parseBody())
+    }
+
+    private fun parseElse() : ElseExpression {
+        return ElseExpression(parseBody())
     }
 
     private fun parsePrint() : PrintExpression {

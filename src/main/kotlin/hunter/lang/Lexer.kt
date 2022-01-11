@@ -21,7 +21,7 @@ enum class TokenType {
     IDENTIFIER, STRING, INT, FLOAT,
 
     // Keywords.
-    IF, ELSE, WHILE,
+    IF, THEN, ELSE, WHILE,
     CONST, LET, FUNCTION,
     PRINT,
     TRUE, FALSE,
@@ -152,10 +152,12 @@ class Lexer {
             "fun" -> TokenType.FUNCTION
             "print" -> TokenType.PRINT
             "if" -> TokenType.IF
+            "then" -> TokenType.THEN
             "else" -> TokenType.ELSE
             "while" -> TokenType.WHILE
             "const" -> TokenType.CONST
             "let" -> TokenType.LET
+            "eq" -> TokenType.EqualEqual
             else -> TokenType.IDENTIFIER
         }
     }
