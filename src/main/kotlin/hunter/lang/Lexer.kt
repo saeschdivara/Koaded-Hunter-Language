@@ -74,6 +74,8 @@ class Lexer {
             '(' -> TokenType.LeftParen
             ')' -> TokenType.RightParen
             ',' -> TokenType.COMMA
+            '+' -> TokenType.PLUS
+            '-' -> TokenType.MINUS
             '<' -> {
                 if (peek() == '=') {
                     advance()

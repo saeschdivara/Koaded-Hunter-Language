@@ -34,6 +34,7 @@ data class PrintExpression(override val parameters: List<Expression>) : Expressi
 data class StringExpression(val value: Token) : Expression
 data class IntExpression(val value: Token) : Expression
 data class VariableDefinitionExpression(val isConst: Boolean, val name: Token, val value: Expression) : Expression
+data class VariableAssignmentExpression(val name: Token, val value: Expression) : Expression
 data class VariableExpression(val value: Token) : Expression
 
 class Parser {
@@ -100,6 +101,11 @@ class Parser {
                 TokenType.CONST -> { expressions.add(parseConst()) }
                 TokenType.WHILE -> { expressions.add(parseWhile()) }
                 TokenType.PRINT -> { expressions.add(parsePrint()) }
+                TokenType.IDENTIFIER -> {
+                    if (peek().type == TokenType.EQUAL) {
+                        expressions.add(parseVariableAssignment(token))
+                    }
+                }
                 else -> {}
             }
         }
@@ -176,6 +182,16 @@ class Parser {
         return VariableDefinitionExpression(false, identifier, parseSimpleExpression(listOf(TokenType.SpaceLevel)))
     }
 
+    private fun parseVariableAssignment(identifier: Token) : VariableAssignmentExpression {
+        val equal = advance()
+        if (equal.type != TokenType.EQUAL) {
+            println("Equal after variable name missing")
+            exitProcess(1)
+        }
+
+        return VariableAssignmentExpression(identifier, parseSimpleExpression(listOf(TokenType.SpaceLevel)))
+    }
+
     private fun parseSimpleExpression(breakPoints: List<TokenType>) : Expression {
 
         val expressionTokens = ArrayList<Token>()
@@ -235,6 +251,8 @@ class Parser {
             TokenType.LOWER -> true
             TokenType.LowerEqual -> true
             TokenType.EqualEqual -> true
+            TokenType.PLUS -> true
+            TokenType.MINUS -> true
             else -> false
         }
     }
