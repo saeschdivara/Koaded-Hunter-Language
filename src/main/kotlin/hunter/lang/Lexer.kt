@@ -11,7 +11,7 @@ enum class TokenType {
 
     // Single-character tokens.
     COMMA, DOT, LeftParen, RightParen,
-    MINUS, PLUS,
+    MINUS, PLUS, COLON,
 
     // One or two character tokens.
     EQUAL, BANG, BangEqual, EqualEqual,
@@ -25,6 +25,7 @@ enum class TokenType {
     CONST, LET, FUNCTION,
     PRINT,
     TRUE, FALSE,
+    STRUCT, NEW,
 
     EOF,
     ;
@@ -76,6 +77,14 @@ class Lexer {
             ',' -> TokenType.COMMA
             '+' -> TokenType.PLUS
             '-' -> TokenType.MINUS
+            ':' -> TokenType.COLON
+            '#' -> {
+                while (peek() != '\n') {
+                    advance()
+                }
+
+                TokenType.COMMENT
+            }
             '<' -> {
                 if (peek() == '=') {
                     advance()
@@ -155,6 +164,8 @@ class Lexer {
             "then" -> TokenType.THEN
             "else" -> TokenType.ELSE
             "while" -> TokenType.WHILE
+            "struct" -> TokenType.STRUCT
+            "new" -> TokenType.NEW
             "const" -> TokenType.CONST
             "let" -> TokenType.LET
             "eq" -> TokenType.EqualEqual
