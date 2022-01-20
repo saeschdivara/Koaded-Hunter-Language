@@ -25,6 +25,12 @@ data class FunctionExpression(val name: Token, override val body: List<Expressio
     }
 }
 
+data class StructExpression(val name: Token, override val body: List<Expression>) : ExpressionWithBody {
+    override fun getExtraInfo(): String {
+        return "[name=${name.lexeme}]"
+    }
+}
+
 data class WhileExpression(val condition: Expression, override val body: List<Expression>) : ExpressionWithBody {
     override fun getExtraInfo(): String {
         return "[condition: $condition]"
@@ -50,6 +56,10 @@ data class VariableDefinitionExpression(val isConst: Boolean, val name: Token, v
 data class VariableAssignmentExpression(val name: Token, val value: Expression) : Expression
 data class VariableExpression(val value: Token) : Expression
 
+data class PropertyAssignmentExpression(val propertyName: Token, val value: Expression) : Expression
+data class StructConstructionExpression(val structName: Token, val properties: List<PropertyAssignmentExpression>) : Expression
+data class PropertyDeclarationExpression(val propertyName: Token, val type: Token) : Expression
+
 class Parser {
 
     private var tokens: List<Token> = emptyList()
@@ -68,6 +78,7 @@ class Parser {
 
             when (token.type) {
                 TokenType.FUNCTION -> { expressions.add(parseFunction()) }
+                TokenType.STRUCT -> { expressions.add(parseStruct()) }
                 else -> {}
             }
         }
@@ -96,6 +107,17 @@ class Parser {
         }
 
         return FunctionExpression(identifier, parseBody())
+    }
+
+    private fun parseStruct() : StructExpression {
+
+        val identifier = advance()
+        if (identifier.type != TokenType.IDENTIFIER) {
+            println("Function has no name")
+            exitProcess(1)
+        }
+
+        return StructExpression(identifier, parseBody())
     }
 
     private fun parseBody(): List<Expression> {
@@ -252,7 +274,62 @@ class Parser {
             }
         }
 
+        if (expressionTokens[0].type == TokenType.NEW) {
+            return parseStructConstruction(expressionTokens.subList(1, expressionTokens.size))
+        }
+
         return parseOperations(expressionTokens)
+    }
+
+    private fun parseStructConstruction(tokens: List<Token>) : StructConstructionExpression {
+        var tokenCounter = 0
+        val identifier = tokens[tokenCounter++]
+        if (identifier.type != TokenType.IDENTIFIER) {
+            println("Struct constructions needs to have first a struct name")
+            exitProcess(1)
+        }
+
+        val leftParen = tokens[tokenCounter++]
+        if (leftParen.type != TokenType.LeftParen) {
+            println("( after struct identifier is missing")
+            exitProcess(1)
+        }
+
+        return StructConstructionExpression(identifier, parsePropertyAssignments(tokens.subList(tokenCounter, tokens.size)))
+    }
+
+    private fun parsePropertyAssignments(tokens: List<Token>): List<PropertyAssignmentExpression> {
+        val assignments = ArrayList<PropertyAssignmentExpression>()
+        var tokenCounter = 0
+
+        while (tokenCounter < tokens.size) {
+
+            val identifier = tokens[tokenCounter++]
+            if (identifier.type != TokenType.IDENTIFIER) {
+                println("Property needs to have first a name")
+                exitProcess(1)
+            }
+
+            val equal = tokens[tokenCounter++]
+            if (equal.type != TokenType.EQUAL) {
+                println("After the name always follows a =")
+                exitProcess(1)
+            }
+
+            val valueTokens = ArrayList<Token>()
+            while (tokens[tokenCounter].type != TokenType.COMMA && tokens[tokenCounter].type != TokenType.RightParen) {
+                valueTokens.add(tokens[tokenCounter++])
+            }
+
+            // skip comma
+            tokenCounter += 1
+
+            val value = parseSimpleExpression2(valueTokens)
+
+            assignments.add(PropertyAssignmentExpression(identifier, value))
+        }
+
+        return assignments
     }
 
     private fun parseOperations(tokens: List<Token>) : OperationExpression {
@@ -291,6 +368,7 @@ class Parser {
             TokenType.EqualEqual -> true
             TokenType.PLUS -> true
             TokenType.MINUS -> true
+            TokenType.DOT -> true
             else -> false
         }
     }

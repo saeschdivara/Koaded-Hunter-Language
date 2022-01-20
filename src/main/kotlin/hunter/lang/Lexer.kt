@@ -78,6 +78,7 @@ class Lexer {
             '+' -> TokenType.PLUS
             '-' -> TokenType.MINUS
             ':' -> TokenType.COLON
+            '.' -> TokenType.DOT
             '#' -> {
                 while (peek() != '\n') {
                     advance()
