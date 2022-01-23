@@ -55,7 +55,11 @@ class Lexer {
             val token = scanToken()
 
             when (token.type) {
-                TokenType.COMMENT -> {}
+                TokenType.COMMENT -> {
+                    while (tokens.last().type == TokenType.SpaceLevel) {
+                        tokens.removeLast()
+                    }
+                }
                 TokenType.SPACE -> {}
                 TokenType.LineBreak -> { line += 1 }
                 else -> {

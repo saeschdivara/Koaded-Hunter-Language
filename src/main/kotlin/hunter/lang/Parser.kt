@@ -146,9 +146,16 @@ class Parser {
                 TokenType.IDENTIFIER -> {
                     if (peek().type == TokenType.EQUAL) {
                         expressions.add(parseVariableAssignment(token))
+                    } else if (peek().type == TokenType.COLON) {
+                        advance()
+                        expressions.add(PropertyDeclarationExpression(token, advance()))
                     }
                 }
                 else -> {}
+            }
+
+            if (isAtEnd() || peek().type != TokenType.SpaceLevel) {
+                break
             }
         }
 
