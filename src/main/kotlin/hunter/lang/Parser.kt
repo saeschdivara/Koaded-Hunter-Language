@@ -17,6 +17,7 @@ interface ExpressionWithParameters : Expression {
 
 class EmptyExpression : Expression
 
+data class ImportExpression(val importPath: List<Token>): Expression
 data class OperationExpression(val left: Expression, val operator: Token, val right: Expression): Expression
 
 data class FunctionExpression(val name: Token, override val body: List<Expression>) : ExpressionWithBody {
@@ -77,6 +78,7 @@ class Parser {
             val token = advance()
 
             when (token.type) {
+                TokenType.IMPORT -> { expressions.add(parseImport()) }
                 TokenType.FUNCTION -> { expressions.add(parseFunction()) }
                 TokenType.STRUCT -> { expressions.add(parseStruct()) }
                 else -> {}
@@ -84,6 +86,21 @@ class Parser {
         }
 
         return expressions
+    }
+
+    private fun parseImport() : ImportExpression {
+        val importPath = ArrayList<Token>()
+
+        while (peek().type == TokenType.IDENTIFIER || peek().type == TokenType.ColonColon) {
+            if (peek().type == TokenType.ColonColon) {
+                continue
+            }
+
+            val identifier = advance()
+            importPath.add(identifier)
+        }
+
+        return ImportExpression(importPath)
     }
 
     private fun parseFunction() : FunctionExpression {

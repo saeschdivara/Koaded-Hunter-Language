@@ -16,11 +16,13 @@ enum class TokenType {
     // One or two character tokens.
     EQUAL, BANG, BangEqual, EqualEqual,
     LOWER, GREATER, LowerEqual, GreaterEqual,
+    ColonColon,
 
     // Literals.
     IDENTIFIER, STRING, INT, FLOAT,
 
     // Keywords.
+    IMPORT,
     IF, THEN, ELSE, WHILE,
     CONST, LET, FUNCTION,
     PRINT,
@@ -56,7 +58,7 @@ class Lexer {
 
             when (token.type) {
                 TokenType.COMMENT -> {
-                    while (tokens.last().type == TokenType.SpaceLevel) {
+                    while (tokens.isNotEmpty() && tokens.last().type == TokenType.SpaceLevel) {
                         tokens.removeLast()
                     }
                 }
@@ -81,7 +83,14 @@ class Lexer {
             ',' -> TokenType.COMMA
             '+' -> TokenType.PLUS
             '-' -> TokenType.MINUS
-            ':' -> TokenType.COLON
+            ':' -> {
+                if (peek() == ':') {
+                    advance()
+                    TokenType.ColonColon
+                } else {
+                    TokenType.COLON
+                }
+            }
             '.' -> TokenType.DOT
             '#' -> {
                 while (peek() != '\n') {
@@ -163,6 +172,7 @@ class Lexer {
         val tokenString = data.substring(start, current)
 
         return when(tokenString) {
+            "import" -> TokenType.IMPORT
             "fun" -> TokenType.FUNCTION
             "print" -> TokenType.PRINT
             "if" -> TokenType.IF
