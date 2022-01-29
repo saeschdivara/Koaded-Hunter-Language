@@ -60,6 +60,7 @@ data class VariableExpression(val value: Token) : Expression
 data class PropertyAssignmentExpression(val propertyName: Token, val value: Expression) : Expression
 data class StructConstructionExpression(val structName: Token, val properties: List<PropertyAssignmentExpression>) : Expression
 data class PropertyDeclarationExpression(val propertyName: Token, val type: Token) : Expression
+data class FunctionCallExpression(val functionName: Token, val namespace: List<Token>, val properties: List<Expression>) : Expression
 
 class Parser {
 
@@ -166,6 +167,8 @@ class Parser {
                     } else if (peek().type == TokenType.COLON) {
                         advance()
                         expressions.add(PropertyDeclarationExpression(token, advance()))
+                    } else if (peek().type == TokenType.ColonColon) {
+                        expressions.add(parseSimpleExpression(listOf(TokenType.SpaceLevel), listOf(token, advance())))
                     }
                 }
                 else -> {}
@@ -276,9 +279,11 @@ class Parser {
         return VariableAssignmentExpression(identifier, parseSimpleExpression(listOf(TokenType.SpaceLevel)))
     }
 
-    private fun parseSimpleExpression(breakPoints: List<TokenType>) : Expression {
+    private fun parseSimpleExpression(breakPoints: List<TokenType>, starterTokens: List<Token> = emptyList()) : Expression {
 
         val expressionTokens = ArrayList<Token>()
+        expressionTokens.addAll(starterTokens)
+
         while (!isAtEnd() && !breakPoints.contains(peek().type)) {
             expressionTokens.add(advance())
         }
@@ -300,9 +305,27 @@ class Parser {
 
         if (expressionTokens[0].type == TokenType.NEW) {
             return parseStructConstruction(expressionTokens.subList(1, expressionTokens.size))
+        } else if (expressionTokens[0].type == TokenType.IDENTIFIER && (expressionTokens[1].type == TokenType.ColonColon || expressionTokens[1].type == TokenType.LeftParen)) {
+            return parseFunctionCall(expressionTokens)
         }
 
         return parseOperations(expressionTokens)
+    }
+
+    private fun parseFunctionCall(tokens: List<Token>) : FunctionCallExpression {
+        val namespace = ArrayList<Token>()
+        var tokenCounter = 0
+        var expectIdentifier = true
+
+        while (tokenCounter < tokens.size && tokens[tokenCounter+1].type != TokenType.LeftParen) {
+            namespace.add(tokens[tokenCounter++])
+            expectIdentifier = !expectIdentifier
+        }
+
+        val identifier = tokens[tokenCounter++]
+        // for now there is no parameter parsing
+
+        return FunctionCallExpression(identifier, namespace, emptyList())
     }
 
     private fun parseStructConstruction(tokens: List<Token>) : StructConstructionExpression {
