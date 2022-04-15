@@ -44,12 +44,16 @@ class Lexer {
     private var line: Int = 1
 
     fun lexFile(path: String): List<Token> {
-        // init
         filePath = path
+        return lex(Files.readAllLines(Paths.get(path)).joinToString("\n"))
+    }
+
+    fun lex(content: String): List<Token> {
+        // init
         start = 0
         current = 0
         line = 1
-        data = Files.readAllLines(Paths.get(path)).joinToString("\n")
+        data = content
 
         val tokens = ArrayList<Token>()
 

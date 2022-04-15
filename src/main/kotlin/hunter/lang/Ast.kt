@@ -1,6 +1,6 @@
 package hunter.lang
 
-class Ast(val expressions: List<Expression>) {
+open class Ast(open val expressions: List<Expression>) {
 
     fun print() {
         for (expression in expressions) {
